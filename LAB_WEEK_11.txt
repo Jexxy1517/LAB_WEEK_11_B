@@ -1,0 +1,40 @@
+1. When a user takes a picture, that picture is stored in a path based on the given URI. In which part of the code handles this? (Copy that part of the code as the answer)
+
+Jawab:
+Bagian kode yang menangani pemetaan (mapping) antara URI dan jalur penyimpanan fisik (path) adalah file XML resource `file_provider_paths.xml`.
+
+Kode:
+<paths>
+    <external-path
+        name="photos"
+        path="Android/data/com.example.lab_week_11_b/files/Pictures" />
+    <external-path
+        name="videos"
+        path="Android/data/com.example.lab_week_11_b/files/Movies" />
+</paths>
+
+
+2. In your FileInfo.kt, there are 5 attributes. On the first attribute, what does the URI refer to? And on the fourth attribute, what does relativePath refer to?
+
+Jawab:
+- Attribute URI (uri):
+Merujuk pada Content URI yang dihasilkan oleh `FileProvider`. URI ini berfungsi sebagai identifier aman yang diberikan kepada aplikasi lain (seperti aplikasi Kamera) agar mereka memiliki akses sementara untuk menulis atau menyimpan hasil foto ke dalam file privat milik aplikasi kita.
+
+- Attribute relativePath:
+Merujuk pada nama folder atau jalur direktori di dalam penyimpanan bersama (Shared Storage/MediaStore), seperti folder "Pictures" atau "Movies". Pada Android 10 (API 29) ke atas, ini digunakan oleh MediaStore untuk mengetahui di folder mana file tersebut harus dikategorikan dan ditampilkan dalam Galeri.
+
+
+3. [Bonus] Explain the chronological order from when a user takes a picture until the file is stored in the MediaStore.
+
+Jawab:
+Berikut adalah urutan kronologisnya:
+
+1. User menekan tombol "Photo" di `MainActivity`.
+2. Aplikasi memeriksa izin penyimpanan (`checkStoragePermission`). Jika diizinkan, fungsi `openImageCapture()` dipanggil.
+3. Di dalam `openImageCapture`, `ProviderFileManager.generatePhotoUri()` dipanggil untuk membuat file fisik kosong di penyimpanan eksternal aplikasi dan menghasilkan sebuah URI menggunakan `FileProvider`.
+4. `takePictureLauncher.launch(uri)` dijalankan, yang membuka aplikasi kamera bawaan dengan membawa URI tersebut sebagai lokasi target penyimpanan.
+5. User mengambil foto. Aplikasi kamera menyimpan hasil foto ke URI yang diberikan tadi.
+6. Setelah foto diambil, callback `takePictureLauncher` tereksekusi di `MainActivity`. Fungsi `providerFileManager.insertImageToStore(photoInfo)` dipanggil.
+7. Di dalam `insertImageToStore`, fungsi `insertToStore` dijalankan. Ini menyiapkan metadata (nama file, tipe mime, relative path) menggunakan `MediaContentHelper`.
+8. `ContentResolver.insert` dipanggil untuk mendaftarkan file baru ke dalam database `MediaStore` dan mendapatkan URI tujuan (Inserted URI).
+9. Terakhir, Stream dibuka (Input Stream dari file sementara FileProvider, Output Stream ke MediaStore). Data gambar disalin (`IOUtils.copy`) dari file sementara ke lokasi permanen di MediaStore agar foto tersebut tersimpan secara publik dan bisa diakses aplikasi Galeri.
